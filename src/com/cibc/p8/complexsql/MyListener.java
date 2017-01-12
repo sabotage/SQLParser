@@ -1956,16 +1956,22 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterSubquery(SubqueryContext ctx) {
 		Logger.log(Logger.DEBUG, "enterSubquery " + ctx.getText() + " XXX " + ctx.getChildCount());
-		model.current = new SQLNode();
+		SQLNode node = new SQLNode();
 		if (model.root == null) {
-			model.root = model.current;
+			model.root = node;
+			model.current = node;
+		}else {
+			model.current.slave = node;
+			node.master = model.current;
+			model.current = node;
+			
 		}
 	}
 
 	@Override
 	public void exitSubquery(SubqueryContext ctx) {
 		Logger.log(Logger.DEBUG, "exitSubquery " + ctx.getText() + " XXX " + ctx.getChildCount());
-       
+        model.current = (SQLNode) model.current.master;
 	}
 
 	@Override
