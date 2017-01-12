@@ -25,6 +25,7 @@ public class SQLNode extends PlanNode {   //子查询节点
 	MergeNode merged_subfrom; //可以和当前SQL合并下发的from子查询
 	MergeNode unmerged_subfrom; //不可以和当前SQL合并下发的from子查询
 	
+	
 	@Override
 	public String getString() {
 		// TODO Auto-generated method stub
@@ -78,6 +79,87 @@ public class SQLNode extends PlanNode {   //子查询节点
 		
 		
 		return sqlString;
+	}
+	
+	
+	@Override
+	public String getExecString() {
+	    String exeString = "";
+		if(this.execStatus == 2) {// not executed
+		//	exeString += "(";
+			Iterator it = this.resultCache.sqlresults.iterator();
+			while (it.hasNext()) {
+			 ArrayList v=(ArrayList)	it.next();
+			 	Iterator it1 = v.iterator();
+			 	while (it1.hasNext()) {
+			 		String v1 = (String) it1.next();
+			 		exeString += "\"" + v1 +"\"";
+			 		if (it1.hasNext()) {
+			 			exeString += ",";
+			 		}
+			 	}
+			 	if (it.hasNext()) {
+		 			exeString += ",";
+		 		}	
+			}
+		//	exeString += ")";
+			return exeString;
+		}
+		
+		exeString = "select ";
+		
+		Iterator<String> it = itemlist.iterator();
+		while (it.hasNext()) {
+			exeString += " " + it.next();
+			if (it.hasNext()) {
+				exeString +=",";
+			}
+		}
+		exeString += " from " ;
+		if (this.join == null) {
+			it = tablelist.iterator();
+			while (it.hasNext()) {
+				exeString += it.next() +" ";
+				if (it.hasNext()) {
+					exeString +=",";
+				}
+			}
+		}else {
+			exeString += join.getString();
+		}
+		
+		exeString += " where ";
+		exeString += this.whereconditions.getExecString();
+		if (this.orderlist != null) {
+			exeString += " order by ";
+			it = orderlist.iterator();
+			while (it.hasNext()) {
+				String order = it.next();
+				exeString += order + " ";
+				if (it.hasNext()) {
+					exeString +=",";
+				}
+			}
+		}
+		
+		if (this.grouplist != null) {
+			exeString += " group by ";
+			it = grouplist.iterator();
+			while (it.hasNext()) {
+				String group = it.next();
+				exeString += group + " ";
+				if (it.hasNext()) {
+					exeString +=",";
+				}
+			}
+		}
+		
+		
+		return exeString;
+	}
+	@Override
+	public void execute() { //计算本节点的SQLResult 结果集
+			//check where condition, could push down or not
 	}
 	
 }

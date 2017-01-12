@@ -18,4 +18,10 @@ public class MergeNode implements AbstractNode {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public String getExecString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

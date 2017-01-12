@@ -18,6 +18,36 @@ public class JoinNode implements AbstractNode {
 	}
 	
 	@Override
+	public String getExecString() {
+		// TODO Auto-generated method stub
+		String result = "";
+		if (joinlist != null) {
+			Iterator it = joinlist.iterator();
+			while (it.hasNext()) {
+				AbstractNode n = (AbstractNode) it.next();
+				if (n instanceof SQLNode) {
+					result += "(" + n.getExecString() + ")";
+				}else {
+				    result  +=  n.getExecString();
+				}
+				if (it.hasNext()) {
+					if (this.jointype == this.jointype.LEFTJOIN) {
+						result += " left join ";
+					}else if (this.jointype == this.jointype.RIGHTJOIN) {
+						result += " right join ";
+					}else if (this.jointype == this.jointype.INNERJOIN) {
+						result += " inner join ";
+					}
+					
+				}
+			}
+		}
+		return result;
+		
+	}
+
+	
+	@Override
 	public String getString() {
 		// TODO Auto-generated method stub
 		String result = "";

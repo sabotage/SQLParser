@@ -25,5 +25,19 @@ public class LogicalExpression implements AbstractNode{
 		// TODO Auto-generated method stub
 		return ELEMENTTYPE.LOGICAL;
 	}
+	@Override
+	public String getExecString() {
+		// TODO Auto-generated method stub
+		// TODO Auto-generated method stub
+		String s1 = left.getExecString();
+		String s2 = right.getExecString();
+		if (!(left instanceof FIXNode)) {
+			s1 = "(" + s1 +")";
+		}
+		if (!(right instanceof FIXNode)) {
+			s2 = "(" + s2 +")";
+		}
+		return s1 +" " + operator + " " + s2;
+	}
 	
 }

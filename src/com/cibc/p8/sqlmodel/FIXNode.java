@@ -23,4 +23,10 @@ public class FIXNode implements AbstractNode {
 		return ELEMENTTYPE.FIX;
 	}
 
+	@Override
+	public String getExecString() {
+		// TODO Auto-generated method stub
+		return value;
+	}
+
 }

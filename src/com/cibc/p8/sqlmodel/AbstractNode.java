@@ -3,7 +3,8 @@ package com.cibc.p8.sqlmodel;
 import java.util.ArrayList;
 
 public interface AbstractNode {
-	public String getString();
+	public String getString();  //获取执行的SQL
+	public String getExecString(); //将结果集带入的SQL内容
 	public ELEMENTTYPE getElementType();
 	
 	public enum NODETYPE {

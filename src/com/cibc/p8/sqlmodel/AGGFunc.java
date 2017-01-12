@@ -16,4 +16,10 @@ public class AGGFunc implements AbstractNode {
 		return ELEMENTTYPE.FUNC;
 	}
 
+	@Override
+	public String getExecString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

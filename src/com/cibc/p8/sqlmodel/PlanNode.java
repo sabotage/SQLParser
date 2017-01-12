@@ -11,11 +11,18 @@ public class PlanNode implements AbstractNode{
 	public PlanNode next;     //同级下一个节点
 	public int childnum;      //下级节点数量
 	public SQLResults  resultCache; //结果集缓存
+	public int execStatus = 0; // 0, not executed, 1: not fully executed  2: fully executed 
 	@Override
 	public String getString() {
 		// TODO Auto-generated method stub
 		return sqlString;
 	}
+	
+	public String getExecString() {
+		// TODO Auto-generated method stub
+		return sqlString;
+	}
+	
 	@Override
 	public ELEMENTTYPE getElementType() {
 		// TODO Auto-generated method stub
