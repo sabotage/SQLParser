@@ -48,7 +48,12 @@ public class testsqlparse {
 			Date d = new Date();
 			long t1 = d.getTime();
 //			for (int i=0 ; i<1000; i++) {
-			//Map callSql = parser.callSql("select a.col1,b.col2,c.col3 from table1 a, table2 b, table3 c where a.col1=? and b.col2>? and a.col2=b.col2 and c.col3=100 or a.col3=c.col3", list);
+			try {
+				Map callSql = parser.callSql("select sum(t1.a), t2.b from table1 t1 left join table2 t2 on t1.name = t2.name left join (select * from table3 t3 where t3.col3>100) on t3.id=t1.id where t1.c in (select city from citylist where provinceid=10) and t1.a>500", list);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			//SqlNode callSql = parser.callSql("select a.col1  from table1 a where a.col1=? or (a.col1=? or a.col1=500)", list);
 			
 			//SqlNode callSql = parser.callSql("select a.col1, b.col2 from table1 a where a.col1=? and a.col1=b.col1 and b.col2 in (select col3 from table3 where col4=5)", list);

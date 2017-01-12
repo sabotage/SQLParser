@@ -4,30 +4,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import com.cibc.p8.sqlmodel.SQLNode;
+
 
 
 public class SQLModel {
-	
+	public SQLNode root = null;
+	public SQLNode current = null;
 
-	private HashMap<String, ArrayList<String>> tablepartitions = new HashMap<String, ArrayList<String>>();
-	private ArrayList<String> partitions = new ArrayList<String>();
-	public ArrayList<String> getPartitions() {
-		return partitions;
-	}
-	public void setPartitions(ArrayList<String> partitions) {
-		this.partitions = partitions;
+	
+	public PARSING_STAGE currentStage;
+	public SUBSTAGE substage;
+	public enum PARSING_STAGE {
+		ITEMLIST, FROM, JOIN, TABLELIST, WHERE, HAVING, ORDERBY, GROUPBY ,LIMIT
 	}
 	
-	public ArrayList getTablepartitions (String table) {
-		return  tablepartitions.get(table);
+	public enum SUBSTAGE {
+		TABLE_REF,  
 	}
-	public void setTablePartitions (String table, ArrayList partitions) {
-		tablepartitions.put(table, partitions);
-	}
-	public String[] getTables () {
-		String [] result = new String [tablepartitions.keySet().size()];
-		return tablepartitions.keySet().toArray(result);
-	}
-	
+		
 	
 }

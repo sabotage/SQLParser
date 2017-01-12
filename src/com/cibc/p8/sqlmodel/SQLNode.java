@@ -1,6 +1,7 @@
 package com.cibc.p8.sqlmodel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import com.cibc.p8.sqlmodel.AbstractNode.ELEMENTTYPE;
@@ -17,6 +18,7 @@ public class SQLNode extends PlanNode {   //子查询节点
 	public ArrayList<String> grouplist; //SQLNode对应的group by
 	public ArrayList<String> orderlist; //SQLNode对应的order by
 
+	public HashMap tempCache = new HashMap(); 
 	private ArrayList dbList;  //sql语句待执行的db节点
 	private String distributetype; // 分发键类型
 	private String distributedkey; // 分发键

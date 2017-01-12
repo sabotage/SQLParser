@@ -7,11 +7,11 @@ public interface AbstractNode {
 	public String getExecString(); //将结果集带入的SQL内容
 	public ELEMENTTYPE getElementType();
 	
-	public enum NODETYPE {
+	static public enum NODETYPE {
 		SELECT, INSERT, DELETE, UPDATE, ALTER, UNDEFINED
 	}
 	
-	public enum ELEMENTTYPE {
+	static public enum ELEMENTTYPE {
 		SQL, FIX, LOGICAL, JOIN, FUNC, UNDEFINED
 	}
 

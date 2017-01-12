@@ -13,19 +13,27 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.cibc.p8.complexsql.PLSQLParser.*;
-import com.cibc.p8.complexsql.SQLModel.PARSING_STAGE;
 import com.cibc.p8.complexsql.util.Config;
 import com.cibc.p8.complexsql.util.Logger;
-import com.cibc.p8.sqlmodel.SQLNode;
 
-public class MyListener implements PLSQLListener {
+public class MyListener2 implements PLSQLListener {
 
+	HashMap<String, String> tablealias = new HashMap<String, String>();
+	//HashMap<String, ArrayList<String>> tablepartitions = new HashMap<String, ArrayList<String>>();
+	String defaulttable = "";
+	SQLModel2 model;
+	// record relationalexpression and mapping sharding bulcket list
+	HashMap<String,String> relationalExpTable = new HashMap<String, String>();
+	HashMap<String,ArrayList<String>> relationalExpRange = new HashMap<String, ArrayList<String>>();
 	
-	private SQLModel model;
-
 	
 
-	public MyListener(SQLModel model) {
+	int sel_level = 0;
+	boolean whereflag = false;
+	boolean fromflag = false;
+	
+
+	public MyListener2(SQLModel2 model) {
 		// TODO Auto-generated constructor stub
 		this.model = model;
 	}
@@ -1956,16 +1964,13 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterSubquery(SubqueryContext ctx) {
 		Logger.log(Logger.DEBUG, "enterSubquery " + ctx.getText() + " XXX " + ctx.getChildCount());
-		model.current = new SQLNode();
-		if (model.root == null) {
-			model.root = model.current;
-		}
+		sel_level++;
 	}
 
 	@Override
 	public void exitSubquery(SubqueryContext ctx) {
 		Logger.log(Logger.DEBUG, "exitSubquery " + ctx.getText() + " XXX " + ctx.getChildCount());
-       
+        sel_level--;
 	}
 
 	@Override
@@ -2018,26 +2023,20 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterFrom_clause(From_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "enterFrom_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		model.currentStage = PARSING_STAGE.FROM;
+		fromflag = true;
+
 	}
 
 	@Override
 	public void exitFrom_clause(From_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "exitFrom_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		fromflag = false;
 	}
 
 	@Override
 	public void enterSelect_list_elements(Select_list_elementsContext ctx) {
 		Logger.log(Logger.DEBUG, "enterSelect_list_elements " + ctx.getText() + " XXX " + ctx.getChildCount());
-		model.currentStage = PARSING_STAGE.ITEMLIST;
-		if (model.current.itemlist == null) {
-			model.current.itemlist = new ArrayList<String>();
-		}
-		String item = ctx.getText();
-		if (!model.current.itemlist.contains(item)) {
-			model.current.itemlist.add(item);
-		}
+
 	}
 
 	@Override
@@ -2073,7 +2072,21 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterTable_ref_aux(Table_ref_auxContext ctx) {
 		Logger.log(Logger.DEBUG, "enterTable_ref_aux " + ctx.getText() + " XXX " + ctx.getChildCount());
-	
+		if (fromflag) {
+			if (ctx.getChildCount() == 2) {
+				String table = ctx.getChild(0).getText();
+				String alias = ctx.getChild(1).getText();
+				tablealias.put(alias, table);
+				Logger.log(Logger.DEBUG, "################# table:" + table + " alias: " + alias);
+				defaulttable = table;
+			} else {
+				String table = ctx.getChild(0).getText();
+				tablealias.put(table, table);
+				Logger.log(Logger.DEBUG, "################# table:" + table + " alias: " + table);
+				defaulttable = table;
+			}
+		}
+
 	}
 
 	@Override
@@ -3052,7 +3065,30 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void exitLogical_or_expression(Logical_or_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "exitLogical_or_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		if (whereflag == true && (ctx.getChildCount() == 3 )) {
+			  //TODO: merge the expression sharding list with and logic
+			String lexp = Config.getInstance().removeQuotes(ctx.getChild(0).getText());
+			String rexp = Config.getInstance().removeQuotes(ctx.getChild(2).getText());
+			String table1 = relationalExpTable.get(lexp);
+			String table2 = relationalExpTable.get(rexp);
+			if (!table1.equals(table2)) {
+				return;
+			}
+			ArrayList llist = relationalExpRange.get(lexp);
+			ArrayList rlist = relationalExpRange.get(rexp);
+			ArrayList result = rlist;
+			Iterator it = llist.iterator();
+			while (it.hasNext()) {
+				String item = (String) it.next();
+				if (!result.contains(item)) {
+					result.add(item);
+				}
+			}
+			model.setTablePartitions(table1, result);
+			relationalExpRange.put(ctx.getText(), result);
+			relationalExpTable.put(ctx.getText(),table1);
+			
+		}
 	}
 
 	@Override
@@ -3064,7 +3100,30 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void exitLogical_and_expression(Logical_and_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "exitLogical_and_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-	
+		if (whereflag == true && (ctx.getChildCount() == 3 )) {
+			  //TODO: merge the expression sharding list with and logic
+			String lexp = Config.getInstance().removeQuotes(ctx.getChild(0).getText());
+			String rexp = Config.getInstance().removeQuotes(ctx.getChild(2).getText());
+			String table1 = relationalExpTable.get(lexp);
+			String table2 = relationalExpTable.get(rexp);
+			if (!table1.equals(table2)) {
+				return;
+			}
+			ArrayList llist = relationalExpRange.get(lexp);
+			ArrayList rlist = relationalExpRange.get(rexp);
+			ArrayList result = new ArrayList();
+			Iterator it = llist.iterator();
+			while (it.hasNext()) {
+				String item = (String) it.next();
+				if (rlist.contains(item)) {
+					result.add(item);
+				}
+			}
+			model.setTablePartitions(table1, result);
+			relationalExpRange.put(ctx.getText(), result);
+			relationalExpTable.put(ctx.getText(),table1);
+			
+		}
 
 	}
 
@@ -3116,12 +3175,111 @@ public class MyListener implements PLSQLListener {
 
 	}
 
+	// check the column is string or number or table.col format
+	private String checktablecol(String exp) {
+		String result = "";
+		Pattern pattern = Pattern.compile("-?[0-9\\.]*");
+		Matcher isNum = pattern.matcher(exp);
+		if (isNum.matches()) {
+			// exp is number
+			return exp;
+		}
+		
+		if (exp.contains("'") || exp.contains("\"")) {
+			// exp is string
+			return exp;
+		}
+		// exp should be a column
+		if (exp.contains(".")) {
+			String[] arr = exp.split("\\.");
+			String table = tablealias.get(arr[0]);
+			if (table == null) {
+				return result;
+			}
+			String col = arr[1];
+			result = table +"|"+ col;
+		}else {
+			String table = defaulttable;
+			String col = exp;
+			result = table +"|" + col;
+		}
+		
+		return result;
+	}
 	
 	
 	@Override
 	public void enterRelational_expression(Relational_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "enterRelational_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-	
+		if (whereflag && ctx.getChildCount() == 3) {
+			Logger.log(Logger.DEBUG, "####### " + ctx.getChild(0).getText() + "***" + ctx.getChild(1).getText()
+					+ " **** " + ctx.getChild(2).getText());
+			String left = ctx.getChild(0).getText();
+			String right = ctx.getChild(2).getText();
+			String lefttable = "";
+			String leftcol = "";
+			String righttable = "";
+			String rightcol = "";
+			
+			String leftresult [] = checktablecol(left).split("\\|");
+			String rightresult [] = checktablecol (right).split("\\|");
+			if (leftresult.length==2) {
+				lefttable = leftresult[0];
+				leftcol = leftresult[1];
+			}
+			if (rightresult.length == 2) {
+				righttable = rightresult[0];
+				rightcol = rightresult[1];
+			}
+			if (leftresult.length==2 && rightresult.length == 1 && (!lefttable.equals("") && (!righttable.equals("")))) {  //format like table1.col1 = 3 
+				ArrayList ranges = Config.getInstance().getTableRange(lefttable);
+				ArrayList ltables = Config.getInstance().getTableByKey(leftresult[0],ctx.getChild(1).getText(), rightresult[0]);
+				//ArrayList lpart = model.getTablepartitions(lefttable);
+		/*		ArrayList lpart = new ArrayList();
+				Iterator it = ltables.iterator();
+				while (it.hasNext()) {
+					String item = (String) it.next();
+					if (!lpart.contains(item)) {
+						lpart.add(item);
+					}
+					Logger.log(Logger.DEBUG, "************* Adding table:" + item);
+				}*/
+				relationalExpTable.put(ctx.getText(),lefttable);
+				relationalExpRange.put(ctx.getText(), ltables);
+				model.setTablePartitions(lefttable, ltables);
+				
+			}else if (leftresult.length ==1 && rightresult.length==2) {  // format like 3= table1.col1
+			
+				ArrayList ranges = Config.getInstance().getTableRange(righttable);
+				
+				ArrayList ltables = Config.getInstance().getTableByKey(rightresult[0],Config.getInstance().getOpposeOP(ctx.getChild(1).getText()), leftresult[0]);
+		/*		ArrayList lpart = model.getTablepartitions(righttable);
+				if (lpart == null) {
+					lpart = new ArrayList();
+				}
+				Iterator it = ltables.iterator();
+				while (it.hasNext()) {
+					String item = (String) it.next();
+					if (!lpart.contains(item)) {
+						lpart.add(item);
+					}
+					Logger.log(Logger.DEBUG, "************* Adding table:" + item);
+				}
+			*/
+				relationalExpTable.put(ctx.getText(),righttable);
+				relationalExpRange.put(ctx.getText(), ltables);
+				model.setTablePartitions(righttable, ltables);
+			}else if (leftresult.length == 2 && rightresult.length == 2) {  //format like table1.col1 = table2.col2
+               // ArrayList ranges = Config.getInstance().getTableRange(lefttable);
+				
+			//	String mytable = Config.getInstance().getTableByKey(leftresult[0],ctx.getChild(1).getText(), rightresult[0]);
+              //  Logger.log(Logger.DEBUG, "************ " + mytable);
+
+			}
+			
+				
+		}
+
 	}
 
 	
@@ -3887,12 +4045,18 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterWhere_clause(Where_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "enterWhere_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		if (sel_level == 1) {
+		    whereflag = true;  //only deal first level select
+		}
+
 	}
 
 	@Override
 	public void exitWhere_clause(Where_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "exitWhere_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
+		if (sel_level == 1) {
+			whereflag = false;
+		}
 		
 	}
 

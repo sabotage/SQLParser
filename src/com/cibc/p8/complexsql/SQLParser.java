@@ -41,39 +41,7 @@ public class SQLParser {
         SQLModel model = new SQLModel();
         walker.walk(new MyListener(model), tree);
         HashMap result = new HashMap();
-        
-
-        String[] tables =  model.getTables();
-        // need a struct like db--> table --> partition
-        String[] dbs = Config.getInstance().getAllDBs();
-        for (int i=0; i< dbs.length; i++) {
-        	String dbquery = "";
-        	int count = 0;
-        	for (int j=0; j< tables.length; j++) { 
-        		Object [] stables =  model.getTablepartitions(tables[j]).toArray(); 
-        		for (int m=0; m<stables.length; m++) {
-        		  String t_db = Config.getInstance().getDBBySharding((String)stables[m]);
-        	      if ( t_db != null && dbs[i].equals(t_db)) {  // same db
-        	    	  count ++;
-        	    	  //dbtables.put(tables[j], (String) stables[m]);
-        	    	  System.out.println ("DB:" + dbs[i] + " table:" + tables[j] + " stables:" + stables[m]);
-        	    	  String newSqlStr = sqlstring;
-        	    	  if (count >1) {
-        	    		  dbquery = dbquery.concat(" UNION ");
-        	    	  }
-        	    	  newSqlStr = newSqlStr.replaceAll(tables[j], (String) stables[m]);
-        	    	  dbquery = dbquery.concat(newSqlStr);
-        	      }
-        		}
-        	}
-        	if (!dbquery.equals("")) {
-        		System.out.println ("DB: " + dbs[i] + " Query: " + dbquery);
-            	result.put(dbs[i],dbquery);
-        	}
-        	
-        }
-        
-      
+       
 		
         
         return result;
