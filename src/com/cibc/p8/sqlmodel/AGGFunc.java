@@ -1,21 +1,19 @@
 package com.cibc.p8.sqlmodel;
 
-import java.util.ArrayList;
+public class AGGFunc implements AbstractNode {
 
-import com.cibc.p8.sqlmodel.AbstractNode.NODETYPE;
-
-public class MergeNode implements AbstractNode {
-	public ArrayList mergeSQL;
-
+	public String function;
+	public String item;
 	@Override
 	public String getString() {
 		// TODO Auto-generated method stub
-		return null;
+		return function + "(" + item +")";
 	}
 
 	@Override
 	public ELEMENTTYPE getElementType() {
 		// TODO Auto-generated method stub
-		return null;
+		return ELEMENTTYPE.FUNC;
 	}
+
 }

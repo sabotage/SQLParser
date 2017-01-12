@@ -15,8 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.cibc.p8.complexsql.SQLParser2;
-import com.cibc.p8.complexsql.model.SqlNode;
+import com.cibc.p8.complexsql.SQLParser;
 
 /**
  * @author 10099359
@@ -38,10 +37,11 @@ public class testsqlparse {
 	public void tearDown() throws Exception {
 	}
 
+	
+	
 	@Test
 	public void testSelect1() {
-		SQLParser2 parser = new SQLParser2();
-		try {
+		SQLParser parser = new SQLParser();
 			ArrayList list = new ArrayList();
 			list.add("350");
 			list.add("250");
@@ -49,7 +49,7 @@ public class testsqlparse {
 			long t1 = d.getTime();
 //			for (int i=0 ; i<1000; i++) {
 			//Map callSql = parser.callSql("select a.col1,b.col2,c.col3 from table1 a, table2 b, table3 c where a.col1=? and b.col2>? and a.col2=b.col2 and c.col3=100 or a.col3=c.col3", list);
-			SqlNode callSql = parser.callSql("select a.col1  from table1 a where a.col1=? or (a.col1=? or a.col1=500)", list);
+			//SqlNode callSql = parser.callSql("select a.col1  from table1 a where a.col1=? or (a.col1=? or a.col1=500)", list);
 			
 			//SqlNode callSql = parser.callSql("select a.col1, b.col2 from table1 a where a.col1=? and a.col1=b.col1 and b.col2 in (select col3 from table3 where col4=5)", list);
 			//SqlNode callSql = parser.callSql("select * from A u join B o on u.id = o.buyer_id where u.name='sun'", list);
@@ -60,10 +60,7 @@ public class testsqlparse {
 			d = new Date();
 			long t2 = d.getTime();
 			System.out.println ("Total " + (t2-t1));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 		
 	}
 	/*
@@ -100,5 +97,7 @@ public class testsqlparse {
 			e.printStackTrace();
 		}
 	}*/
+	
+	
 
 }
