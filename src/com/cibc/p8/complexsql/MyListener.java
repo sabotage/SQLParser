@@ -2137,8 +2137,17 @@ public class MyListener implements PLSQLListener {
 			SQLNode current = (SQLNode) model.current;
 			TableItem tb = (TableItem) model.current.tempCache.get("Table");
 			
-			if (current.substage == SUBSTAGE.JOIN) {
-		
+			if (current.substage == SUBSTAGE.JOIN && current.parent == null) { // not sub query
+				ArrayList joinlist = current.joinlist;
+				if (joinlist == null || joinlist.size() == 0){ // should not happen
+					return;
+				}
+				JoinItem ji =(JoinItem) joinlist.get(joinlist.size()-1);
+				if (ji.joinlist == null) {
+					ji.joinlist = new ArrayList();
+				}
+				ji.joinlist.add(tb);
+					// TODO: some bug here, duplicated table for join node
 				
 			}else {
 				if (current.tablelist == null) {
