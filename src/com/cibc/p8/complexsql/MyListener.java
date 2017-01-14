@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,9 +15,15 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.cibc.p8.complexsql.PLSQLParser.*;
 import com.cibc.p8.complexsql.SQLModel.PARSING_STAGE;
+import com.cibc.p8.complexsql.SQLModel.SUBSTAGE;
 import com.cibc.p8.complexsql.util.Config;
 import com.cibc.p8.complexsql.util.Logger;
+import com.cibc.p8.sqlmodel.FIXITEM;
+import com.cibc.p8.sqlmodel.JoinItem;
+import com.cibc.p8.sqlmodel.JoinItem.JOINTYPE;
+import com.cibc.p8.sqlmodel.LogicalExpression;
 import com.cibc.p8.sqlmodel.SQLNode;
+import com.cibc.p8.sqlmodel.TableItem;
 
 public class MyListener implements PLSQLListener {
 
@@ -1961,9 +1968,45 @@ public class MyListener implements PLSQLListener {
 			model.root = node;
 			model.current = node;
 		}else {
-			model.current.slave = node;
-			node.master = model.current;
+			if (model.current.slaves == null) {
+				model.current.slaves = new ArrayList();
+			}
+			model.current.slaves.add( node);
+			node.parent = model.current;
 			model.current = node;
+			
+		}
+		if (node.parent == null) {
+			// first level node, do nothing
+			return;
+		}
+		if (node.parent.substage == SUBSTAGE.JOIN) {
+			ArrayList joinlist = ((SQLNode)(node.parent)).joinlist;
+			
+			if (joinlist != null  && (joinlist.size()>0)) {
+				JoinItem ji = (JoinItem) joinlist.get(joinlist.size()-1);
+				if (ji.joinlist == null) {
+					ji.joinlist = new ArrayList();
+				}
+				ji.joinlist.add(node); // insert node to joinlist
+			}
+		}
+		if (node.parent.substage == SUBSTAGE.COMPOUND) {  //subquery inside a logicalexpression
+			Stack expstack =(Stack) node.parent.tempCache.get("expstack");
+			if (expstack == null) {
+				// not possible, return error
+				return;
+			}
+			if (expstack.size()>0) {
+				LogicalExpression parent =(LogicalExpression) expstack.get(expstack.size()-1);
+				if (parent.leftstr.equals(ctx.getText().replace("(","").replace(")",""))) {
+					parent.left = node;
+				}else if (parent.rightstr.equals(ctx.getText().replace("(","").replace(")",""))) {
+					parent.right = node;
+				}
+				//System.out.println("######### add SQL Node" + node.getString());
+			}
+			 
 			
 		}
 	}
@@ -1971,7 +2014,10 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void exitSubquery(SubqueryContext ctx) {
 		Logger.log(Logger.DEBUG, "exitSubquery " + ctx.getText() + " XXX " + ctx.getChildCount());
-        model.current = (SQLNode) model.current.master;
+        if (model.current!=null && model.current.parent!= null) {
+        	model.current = (SQLNode) model.current.parent;
+        }
+		
 	}
 
 	@Override
@@ -2024,44 +2070,45 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterFrom_clause(From_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "enterFrom_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		model.currentStage = PARSING_STAGE.FROM;
+		model.current.currentstage = PARSING_STAGE.FROM;
 	}
 
 	@Override
 	public void exitFrom_clause(From_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "exitFrom_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		model.current.currentstage = PARSING_STAGE.UNDEFINED;
 	}
 
 	@Override
 	public void enterSelect_list_elements(Select_list_elementsContext ctx) {
 		Logger.log(Logger.DEBUG, "enterSelect_list_elements " + ctx.getText() + " XXX " + ctx.getChildCount());
-		model.currentStage = PARSING_STAGE.ITEMLIST;
-		if (model.current.itemlist == null) {
-			model.current.itemlist = new ArrayList<String>();
+		model.current.currentstage = PARSING_STAGE.ITEMLIST;
+		SQLNode current = (SQLNode)model.current;
+		if (current.itemlist == null) {
+			current.itemlist = new ArrayList<String>();
 		}
 		String item = ctx.getText();
-		if (!model.current.itemlist.contains(item)) {
-			model.current.itemlist.add(item);
+		if (!current.itemlist.contains(item)) {
+			current.itemlist.add(item);
 		}
 	}
 
 	@Override
 	public void exitSelect_list_elements(Select_list_elementsContext ctx) {
 		Logger.log(Logger.DEBUG, "exitSelect_list_elements " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		model.current.currentstage = PARSING_STAGE.UNDEFINED;
 	}
 
 	@Override
 	public void enterTable_ref_list(Table_ref_listContext ctx) {
 		Logger.log(Logger.DEBUG, "enterTable_ref_list " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+//		model.current.currentstage = PARSING_STAGE.TABLELIST;
 	}
 
 	@Override
 	public void exitTable_ref_list(Table_ref_listContext ctx) {
 		Logger.log(Logger.DEBUG, "exitTable_ref_list " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+//		model.current.currentstage = PARSING_STAGE.UNDEFINED;
 	}
 
 	@Override
@@ -2086,36 +2133,78 @@ public class MyListener implements PLSQLListener {
 	public void exitTable_ref_aux(Table_ref_auxContext ctx) {
 		Logger.log(Logger.DEBUG, "exitTable_ref_aux " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		if(model.current.currentstage == PARSING_STAGE.FROM) {
+			SQLNode current = (SQLNode) model.current;
+			TableItem tb = (TableItem) model.current.tempCache.get("Table");
+			
+			if (current.substage == SUBSTAGE.JOIN) {
+		
+				
+			}else {
+				if (current.tablelist == null) {
+					current.tablelist = new ArrayList();
+				}
+				current.tablelist.add(tb);
+			}
+		}
+		
 	}
 
 	@Override
 	public void enterJoin_clause(Join_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "enterJoin_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		if (model.current.currentstage == PARSING_STAGE.FROM) {
+			model.current.tempCache.remove("expstack");
+			model.current.substage = SUBSTAGE.JOIN;
+			JoinItem join = new JoinItem();
+			join.jointype = JOINTYPE.INNERJOIN;
+			join.joinlist = new ArrayList();
+			
+			if (((SQLNode)model.current).joinlist == null) {
+				((SQLNode)model.current).joinlist = new ArrayList();
+			}
+			((SQLNode)model.current).joinlist.add(join);
+			System.out.println("####### add join node " );
+		}
+		
+		
 	}
 
 	@Override
 	public void exitJoin_clause(Join_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "exitJoin_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		model.current.substage = SUBSTAGE.UNDEFINED;
 	}
 
 	@Override
 	public void enterJoin_on_part(Join_on_partContext ctx) {
 		Logger.log(Logger.DEBUG, "enterJoin_on_part " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		model.current.substage = SUBSTAGE.JOIN_ON;
+		
+		
 	}
 
 	@Override
 	public void exitJoin_on_part(Join_on_partContext ctx) {
 		Logger.log(Logger.DEBUG, "exitJoin_on_part " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		model.current.substage = SUBSTAGE.UNDEFINED;
+		
 	}
 
 	@Override
 	public void enterJoin_using_part(Join_using_partContext ctx) {
 		Logger.log(Logger.DEBUG, "enterJoin_using_part " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		if (model.current.substage == SUBSTAGE.JOIN && (ctx.getChildCount() == 4)) {
+			ArrayList joinlist = ((SQLNode)(model.current)).joinlist;
+			if (joinlist == null || joinlist.size()==0) {
+				return;  //error, should not happen
+			}
+			JoinItem ji = (JoinItem) joinlist.get(joinlist.size()-1);
+			ji.using = ctx.getChild(2).getText();   // using  (  column  )	
+		}
 	}
 
 	@Override
@@ -2128,6 +2217,17 @@ public class MyListener implements PLSQLListener {
 	public void enterOuter_join_type(Outer_join_typeContext ctx) {
 		Logger.log(Logger.DEBUG, "enterOuter_join_type " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		ArrayList joinlist = ((SQLNode)(model.current)).joinlist;
+		if (joinlist == null || joinlist.size()==0) {
+			return;  //error, should not happen
+		}
+		JoinItem ji = (JoinItem) joinlist.get(joinlist.size()-1);
+		if (ctx.getText().equals("left")) {
+			ji.jointype = JOINTYPE.LEFTJOIN;
+		}else if (ctx.getText().equals("right")) {
+			ji.jointype = JOINTYPE.RIGHTJOIN;
+		}
+		
 	}
 
 	@Override
@@ -3017,6 +3117,10 @@ public class MyListener implements PLSQLListener {
 	public void enterExpression_list(Expression_listContext ctx) {
 		Logger.log(Logger.DEBUG, "enterExpression_list " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		if (model.current.currentstage == PARSING_STAGE.FROM || model.current.currentstage == PARSING_STAGE.WHERE ) {
+			LogicalExpression exp = new LogicalExpression();
+			model.current.tempCache.put("exp", exp);
+		}
 	}
 
 	@Override
@@ -3053,25 +3157,77 @@ public class MyListener implements PLSQLListener {
 	public void enterLogical_or_expression(Logical_or_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "enterLogical_or_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		_enterLogical_expression(ctx);
 	}
 
 	@Override
 	public void exitLogical_or_expression(Logical_or_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "exitLogical_or_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		_exitLogical_expression(ctx);
 	}
 
+	private void _enterLogical_expression (ParseTree ctx) {
+
+		if (ctx.getChildCount() ==3) {
+			LogicalExpression exp = new LogicalExpression();
+			ParseTree left = (ParseTree)ctx.getChild(0);
+			ParseTree right = (ParseTree)ctx.getChild(2);
+			String op = ctx.getChild(1).getText();
+			//TODO: check left is end
+			exp.leftstr = left.getText().replace("(","").replace(")","");
+			exp.rightstr = right.getText().replace("(","").replace(")","");;
+			Stack expstack =(Stack) model.current.tempCache.get("expstack");
+			if (expstack == null) {
+				expstack = new Stack();
+				model.current.tempCache.put("expstack", expstack);
+				if (model.current.currentstage == PARSING_STAGE.WHERE) {
+				    ((SQLNode)model.current).whereconditions = exp;
+				}else if ((model.current.currentstage == PARSING_STAGE.FROM ) && (model.current.substage == SUBSTAGE.JOIN_ON)) {
+					// join on node
+			//		((SQLNode)model.current).join.OnCondition = exp;
+					ArrayList joinlist = ((SQLNode)model.current).joinlist;
+					if (joinlist != null && joinlist.size()>0) {
+						JoinItem ji = (JoinItem)joinlist.get(joinlist.size()-1);
+						ji.OnCondition = exp;
+					}
+				}
+			}
+			LogicalExpression parent = null;
+			if (expstack.size()>0) {
+				parent =(LogicalExpression) expstack.get(expstack.size()-1);
+				if (parent.leftstr.equals(ctx.getText().replace("(","").replace(")",""))) {
+					parent.left = exp;
+				}else if (parent.rightstr.equals(ctx.getText().replace("(","").replace(")",""))) {
+					parent.right = exp;
+				}
+			}
+			exp.left = new FIXITEM(exp.leftstr);
+			exp.right = new FIXITEM(exp.rightstr);
+			exp.operator = op;
+			expstack.push(exp);
+			System.out.println("############ PUSH" + exp.leftstr +" " + exp.operator +" "+ exp.rightstr);
+		}
+		
+	}
+	
+	private void _exitLogical_expression(ParseTree ctx) {
+		if (ctx.getChildCount() ==3) {
+			Stack expstack =(Stack) model.current.tempCache.get("expstack");
+			LogicalExpression node = (LogicalExpression) expstack.pop();
+			System.out.println("########### POP " + node.getString());
+		}
+
+	}
 	@Override
 	public void enterLogical_and_expression(Logical_and_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "enterLogical_and_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		_enterLogical_expression(ctx);
 	}
 
 	@Override
 	public void exitLogical_and_expression(Logical_and_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "exitLogical_and_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-	
-
+		_exitLogical_expression(ctx);
 	}
 
 	@Override
@@ -3127,7 +3283,7 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterRelational_expression(Relational_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "enterRelational_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-	
+		this._enterLogical_expression(ctx);
 	}
 
 	
@@ -3135,19 +3291,23 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void exitRelational_expression(Relational_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "exitRelational_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		this._exitLogical_expression(ctx);
 	}
 
 	@Override
 	public void enterCompound_expression(Compound_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "enterCompound_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		this._enterLogical_expression(ctx);
+		if (ctx.getChildCount() ==3) {
+			model.current.substage = SUBSTAGE.COMPOUND;
+		}
 	}
 
 	@Override
 	public void exitCompound_expression(Compound_expressionContext ctx) {
 		Logger.log(Logger.DEBUG, "exitCompound_expression " + ctx.getText() + " XXX " + ctx.getChildCount());
-
+		this._exitLogical_expression(ctx);
+		model.current.substage = SUBSTAGE.UNDEFINED;
 	}
 
 	@Override
@@ -3870,6 +4030,11 @@ public class MyListener implements PLSQLListener {
 	public void enterTable_alias(Table_aliasContext ctx) {
 		Logger.log(Logger.DEBUG, "enterTable_alias " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		if (model.current.currentstage == PARSING_STAGE.FROM) {
+		    TableItem tb = (TableItem) model.current.tempCache.get("Table");
+		    tb.alias = ctx.getText();
+		}
+		
 	}
 
 	@Override
@@ -3893,13 +4058,14 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void enterWhere_clause(Where_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "enterWhere_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		model.current.tempCache.remove("expstack");
+		model.current.currentstage = PARSING_STAGE.WHERE;
 	}
 
 	@Override
 	public void exitWhere_clause(Where_clauseContext ctx) {
 		Logger.log(Logger.DEBUG, "exitWhere_clause " + ctx.getText() + " XXX " + ctx.getChildCount());
-		
+		model.current.currentstage = PARSING_STAGE.UNDEFINED;
 	}
 
 	@Override
@@ -4290,6 +4456,10 @@ public class MyListener implements PLSQLListener {
 	public void enterTableview_name(Tableview_nameContext ctx) {
 		Logger.log(Logger.DEBUG, "enterTableview_name " + ctx.getText() + " XXX " + ctx.getChildCount());
 
+		if (model.current.currentstage == PARSING_STAGE.FROM) {
+			TableItem tb = new TableItem(ctx.getText(),"");
+			model.current.tempCache.put("Table",tb);
+		}
 	}
 
 	@Override

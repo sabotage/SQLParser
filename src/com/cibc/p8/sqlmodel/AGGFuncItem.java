@@ -1,32 +1,25 @@
 package com.cibc.p8.sqlmodel;
 
-public class FIXNode implements AbstractNode {
+public class AGGFuncItem implements AbstractNode {
 
-	public String value;
-	
-	public FIXNode (String value) {
-		this.value = value;
-	}
-	
-	public FIXNode (int value) {
-		this.value = String.valueOf(value);
-	}
+	public String function;
+	public String item;
 	@Override
 	public String getString() {
 		// TODO Auto-generated method stub
-		return value;
+		return function + "(" + item +")";
 	}
 
 	@Override
 	public ELEMENTTYPE getElementType() {
 		// TODO Auto-generated method stub
-		return ELEMENTTYPE.FIX;
+		return ELEMENTTYPE.FUNC;
 	}
 
 	@Override
 	public String getExecString() {
 		// TODO Auto-generated method stub
-		return value;
+		return null;
 	}
 
 }

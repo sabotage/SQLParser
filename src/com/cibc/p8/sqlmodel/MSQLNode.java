@@ -17,13 +17,7 @@ public class MSQLNode extends PlanNode{
 		public String getString() {
 			// TODO Auto-generated method stub
 			sqlString = "";
-			while (next != null) {
-			  if (sqlString.equals("")) {
-				  sqlString = next.getString();
-			  }else {
-				  sqlString = sqlString + " union " + next.getString();
-			  }
-			}
+			
 			return sqlString;
 		}
 		

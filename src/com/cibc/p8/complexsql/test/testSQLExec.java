@@ -9,11 +9,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.cibc.p8.sqlmodel.AbstractNode;
-import com.cibc.p8.sqlmodel.FIXNode;
-import com.cibc.p8.sqlmodel.JoinNode;
+import com.cibc.p8.sqlmodel.FIXITEM;
+import com.cibc.p8.sqlmodel.JoinItem;
 import com.cibc.p8.sqlmodel.LogicalExpression;
 import com.cibc.p8.sqlmodel.SQLNode;
 import com.cibc.p8.sqlmodel.SQLResults;
+import com.cibc.p8.sqlmodel.TableItem;
 
 public class testSQLExec {
 	/**
@@ -32,41 +33,42 @@ public class testSQLExec {
 		itemlist.add("t1.a");
 		itemlist.add("t2.b");
 		q.itemlist = itemlist;
-		JoinNode j1 = new JoinNode();
-		ArrayList <String> tablelist = new ArrayList<String> ();
-		tablelist.add("table1 t1");
-		tablelist.add("table2 t2");
-		tablelist.add("table3 t3");
-		j1.tablelist = tablelist;
+		JoinItem j1 = new JoinItem();
+		ArrayList <TableItem> tablelist = new ArrayList<TableItem> ();
+		tablelist.add(new TableItem("table1", "t1"));
+		tablelist.add(new TableItem("table2", "t2"));
+		tablelist.add(new TableItem("table3", "t3"));
 		q.tablelist = tablelist;
 		j1.joinlist = new ArrayList();
-		j1.joinlist.add(new FIXNode("table1 t1"));
-		j1.joinlist.add(new FIXNode("table2 t2"));
+		j1.joinlist.add(new FIXITEM("table1 t1"));
+		j1.joinlist.add(new FIXITEM("table2 t2"));
 		j1.jointype = j1.jointype.LEFTJOIN;
 		j1.OnCondition = new LogicalExpression();
-		j1.OnCondition.left = new FIXNode("t1.name");
-		j1.OnCondition.right = new FIXNode("t2.name");
+		j1.OnCondition.left = new FIXITEM("t1.name");
+		j1.OnCondition.right = new FIXITEM("t2.name");
 		j1.OnCondition.operator = "=";
-		JoinNode j2 = new JoinNode();
-		q.join = j2;
+		q.joinlist = new ArrayList();
+		JoinItem j2 = new JoinItem();
+		q.joinlist.add(j2);
 		j2.joinlist = new ArrayList();
 		j2.joinlist.add(j1);
 		j2.jointype = j2.jointype.INNERJOIN;
 		j2.OnCondition = new LogicalExpression();
-		j2.OnCondition.left = new FIXNode("t3.id");
-		j2.OnCondition.right = new FIXNode("t1.id");
+		j2.OnCondition.left = new FIXITEM("t3.id");
+		j2.OnCondition.right = new FIXITEM("t1.id");
 		j2.OnCondition.operator = "=";
 		SQLNode q1 = new SQLNode();  //select * from table3 t3 where t3.col3>100
 		q1.itemlist = new ArrayList ();
 		q1.itemlist.add("*");
 		q1.tablelist = new ArrayList();
-		q1.tablelist.add("table3 t3");
+		TableItem tb3 = new TableItem("table3","t3");
+		q1.tablelist.add(tb3);
 		
 		j2.joinlist.add(q1);
 		LogicalExpression c1 = new LogicalExpression();
 		q1.whereconditions = c1;
-		c1.left = new FIXNode("t3.col3");
-		c1.right = new FIXNode("100");
+		c1.left = new FIXITEM("t3.col3");
+		c1.right = new FIXITEM("100");
 		c1.operator = ">";
 		LogicalExpression c2 = new LogicalExpression();
 		q.whereconditions = c2;
@@ -75,32 +77,33 @@ public class testSQLExec {
 		c2.operator = "and";
 		LogicalExpression c4 = new LogicalExpression();
 		c2.right = c4;
-		c4.left = new FIXNode("t1.a");
+		c4.left = new FIXITEM("t1.a");
 		c4.operator = ">";
-		c4.right = new FIXNode("500");
+		c4.right = new FIXITEM("500");
 		
-		c3.left = new FIXNode("t1.c");
+		c3.left = new FIXITEM("t1.c");
 		c3.operator = "in";
 		SQLNode q3 = new SQLNode();
 		c3.right = q3;
 		q3.itemlist = new ArrayList();
 		q3.itemlist.add("city");
 		q3.tablelist = new ArrayList();
-		q3.tablelist.add("citylist");
+		TableItem tb = new TableItem("citylist","");
+		q3.tablelist.add(tb);
 		
 		LogicalExpression c5= new LogicalExpression ();
 		q3.whereconditions = c5;
-		c5.left = new FIXNode("provinceid");
+		c5.left = new FIXITEM("provinceid");
 		c5.operator = "=";
-		c5.right = new FIXNode("10");
+		c5.right = new FIXITEM("10");
 		
 		q.orderlist = new ArrayList();
 		q.orderlist.add("t1.name");
-		q.slave = q1;
-		q1.first = q1;
-		q1.last = q3;
-		q1.next = q3;
-		q1.master = q;
+		q.slaves = new ArrayList();
+		q.slaves.add( q1);
+		q.slaves.add(q3);
+		q1.parent = q;
+		q3.parent = q;
 		q1.execStatus = 2;
 		q3.execStatus = 2;
 		

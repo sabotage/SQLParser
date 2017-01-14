@@ -3,12 +3,12 @@ package com.cibc.p8.sqlmodel;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class JoinNode implements AbstractNode {
+public class JoinItem implements AbstractNode {
 
 	public ArrayList<AbstractNode> joinlist;  //join list
-	public ArrayList<String> tablelist; //table list	
+//	public ArrayList<TableItem> tablelist; //table list	
 	public LogicalExpression OnCondition;
-	
+	public String using; // using item
 	public JOINTYPE jointype;   // inner,  left, right
 	public String stratagy; // INDEX_NEXT_LOOP, HASH, 
 	
@@ -32,16 +32,23 @@ public class JoinNode implements AbstractNode {
 				}
 				if (it.hasNext()) {
 					if (this.jointype == this.jointype.LEFTJOIN) {
-						result += " left join ";
+						result += " LEFT JOIN ";
 					}else if (this.jointype == this.jointype.RIGHTJOIN) {
-						result += " right join ";
+						result += " RIGHT JOIN ";
 					}else if (this.jointype == this.jointype.INNERJOIN) {
-						result += " inner join ";
+						result += " INNER JOIN ";
 					}
 					
 				}
 			}
 		}
+		if (this.OnCondition != null) {
+			result = result+ " ON "+ this.OnCondition.getString();
+		}
+		if (this.using != null) {
+			result += " USING(" + using + ")"; 
+		}
+			
 		return result;
 		
 	}
@@ -52,6 +59,15 @@ public class JoinNode implements AbstractNode {
 		// TODO Auto-generated method stub
 		String result = "";
 		if (joinlist != null) {
+			if (this.jointype == this.jointype.LEFTJOIN) {
+				result += " LEFT JOIN ";
+			}else if (this.jointype == this.jointype.RIGHTJOIN) {
+				result += " RIGHT JOIN ";
+			}else if (this.jointype == this.jointype.INNERJOIN) {
+				result += " INNTER JOIN ";
+			}
+			
+		
 			Iterator it = joinlist.iterator();
 			while (it.hasNext()) {
 				AbstractNode n = (AbstractNode) it.next();
@@ -61,16 +77,15 @@ public class JoinNode implements AbstractNode {
 				    result  +=  n.getString();
 				}
 				if (it.hasNext()) {
-					if (this.jointype == this.jointype.LEFTJOIN) {
-						result += " left join ";
-					}else if (this.jointype == this.jointype.RIGHTJOIN) {
-						result += " right join ";
-					}else if (this.jointype == this.jointype.INNERJOIN) {
-						result += " inner join ";
-					}
-					
+					result += ",";
 				}
 			}
+		}
+		if (this.OnCondition != null) {
+		result = result + " ON "+ this.OnCondition.getString();
+		}
+		if (this.using != null) {
+			result += " USING(" + using +")";
 		}
 		return result;
 		

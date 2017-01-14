@@ -1,17 +1,22 @@
 package com.cibc.p8.sqlmodel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import com.cibc.p8.complexsql.SQLModel.PARSING_STAGE;
+import com.cibc.p8.complexsql.SQLModel.SUBSTAGE;
 
 public class PlanNode implements AbstractNode{
 	public String sqlString; //节点对应的SQL String
-	public PlanNode master;   //上级节点
-	public PlanNode slave;    //下级节点
-	public PlanNode first;    //同级第一个节点
-	public PlanNode last;     //同级最后一个节点
-	public PlanNode next;     //同级下一个节点
-	public int childnum;      //下级节点数量
+	public PlanNode parent;   //上级节点
+	public ArrayList<PlanNode> slaves;    //下级节点
 	public SQLResults  resultCache; //结果集缓存
 	public int execStatus = 0; // 0, not executed, 1: not fully executed  2: fully executed 
+
+	public PARSING_STAGE currentstage;
+	public SUBSTAGE substage;
+	public HashMap tempCache = new HashMap(); 
+	
 	@Override
 	public String getString() {
 		// TODO Auto-generated method stub

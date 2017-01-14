@@ -12,7 +12,7 @@ public interface AbstractNode {
 	}
 	
 	static public enum ELEMENTTYPE {
-		SQL, FIX, LOGICAL, JOIN, FUNC, UNDEFINED
+		SQL, FIX, LOGICAL, JOIN, FUNC, TABLE, UNDEFINED
 	}
 
 }

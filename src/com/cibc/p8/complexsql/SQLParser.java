@@ -22,10 +22,11 @@ import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupFile;
 
 import com.cibc.p8.complexsql.util.Config;
+import com.cibc.p8.sqlmodel.PlanNode;
 
 public class SQLParser {
 
-	public Map callSql(String sqlstring, ArrayList list) throws FileNotFoundException, IOException {
+	public PlanNode callSql(String sqlstring, ArrayList list) throws FileNotFoundException, IOException {
 		
 		for (int i=0; i< list.size() ; i++) {
 			sqlstring = sqlstring.replaceFirst("\\?", (String) list.get(i));
@@ -40,11 +41,10 @@ public class SQLParser {
         ParseTreeWalker walker  = new ParseTreeWalker();
         SQLModel model = new SQLModel();
         walker.walk(new MyListener(model), tree);
-        HashMap result = new HashMap();
-       
+        
 		
         
-        return result;
+        return model.current;
 	}
 	
 	

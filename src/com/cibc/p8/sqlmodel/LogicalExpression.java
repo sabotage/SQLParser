@@ -7,17 +7,27 @@ public class LogicalExpression implements AbstractNode{
 	public AbstractNode left;   // table1.col1
 	public String operator;     // in
 	public AbstractNode right;  // select c from tablec where col3=1
+	public String leftstr = "";
+	public String rightstr = "";
 	@Override
 	public String getString() {
 		// TODO Auto-generated method stub
-		String s1 = left.getString();
-		String s2 = right.getString();
-		if (!(left instanceof FIXNode)) {
-			s1 = "(" + s1 +")";
+		String s1 = "";
+		String s2 = "";
+		if (left != null) {
+			s1 = left.getString();
+			if (!(left instanceof FIXITEM)) {
+				s1 = "(" + s1 +")";
+			}
 		}
-		if (!(right instanceof FIXNode)) {
-			s2 = "(" + s2 +")";
+		if (right != null) {
+			s2 = right.getString();
+			if (!(right instanceof FIXITEM)) {
+				s2 = "(" + s2 +")";
+			}
 		}
+		
+		
 		return s1 +" " + operator + " " + s2;
 	}
 	@Override
@@ -31,10 +41,10 @@ public class LogicalExpression implements AbstractNode{
 		// TODO Auto-generated method stub
 		String s1 = left.getExecString();
 		String s2 = right.getExecString();
-		if (!(left instanceof FIXNode)) {
+		if (!(left instanceof FIXITEM)) {
 			s1 = "(" + s1 +")";
 		}
-		if (!(right instanceof FIXNode)) {
+		if (!(right instanceof FIXITEM)) {
 			s2 = "(" + s2 +")";
 		}
 		return s1 +" " + operator + " " + s2;

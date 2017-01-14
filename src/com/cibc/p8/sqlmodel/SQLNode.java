@@ -4,13 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import com.cibc.p8.complexsql.SQLModel.PARSING_STAGE;
+import com.cibc.p8.complexsql.SQLModel.SUBSTAGE;
 import com.cibc.p8.sqlmodel.AbstractNode.ELEMENTTYPE;
 import com.cibc.p8.sqlmodel.AbstractNode.NODETYPE;
 
 public class SQLNode extends PlanNode {   //子查询节点
 	public ArrayList<String> itemlist;  //SQLNode对应的select字段
-	public JoinNode join;  //SQLNode对应的join_list
-	public ArrayList<String> tablelist; //对应的table_list
+	public ArrayList<JoinItem> joinlist;  //SQLNode对应的join_list
+	public ArrayList<TableItem> tablelist; //对应的table_list
 	public AbstractNode  whereconditions; //对应的WHERE
 	public AbstractNode  havingconditions; //对应的having
 	public int selectlimit; //SQLNode对应的limit
@@ -18,7 +20,7 @@ public class SQLNode extends PlanNode {   //子查询节点
 	public ArrayList<String> grouplist; //SQLNode对应的group by
 	public ArrayList<String> orderlist; //SQLNode对应的order by
 
-	public HashMap tempCache = new HashMap(); 
+	
 	private ArrayList dbList;  //sql语句待执行的db节点
 	private String distributetype; // 分发键类型
 	private String distributedkey; // 分发键
@@ -32,8 +34,10 @@ public class SQLNode extends PlanNode {   //子查询节点
 	public String getString() {
 		// TODO Auto-generated method stub
 		sqlString = "select ";
-		
-		Iterator<String> it = itemlist.iterator();
+		if (itemlist == null) {
+			return "";
+		}
+		Iterator it = itemlist.iterator();
 		while (it.hasNext()) {
 			sqlString += " " + it.next();
 			if (it.hasNext()) {
@@ -41,37 +45,45 @@ public class SQLNode extends PlanNode {   //子查询节点
 			}
 		}
 		sqlString += " from " ;
-		if (this.join == null) {
+		if (this.tablelist != null) {
 			it = tablelist.iterator();
 			while (it.hasNext()) {
-				sqlString += it.next() +" ";
+				sqlString += ((TableItem)it.next()).getString() ;
 				if (it.hasNext()) {
 					sqlString +=",";
 				}
 			}
-		}else {
-			sqlString += join.getString();
 		}
-		
-		sqlString += " where ";
-		sqlString += this.whereconditions.getString();
-		if (this.orderlist != null) {
-			sqlString += " order by ";
-			it = orderlist.iterator();
+		if (this.joinlist != null){
+			it = joinlist.iterator();
 			while (it.hasNext()) {
-				String order = it.next();
-				sqlString += order + " ";
-				if (it.hasNext()) {
-					sqlString +=",";
-				}
+				JoinItem ji = (JoinItem)it.next();
+				sqlString += ji.getString();
 			}
 		}
 		
+		
+		if (this.whereconditions != null) {
+			sqlString += " where ";
+		
+		sqlString += this.whereconditions.getString();
+			if (this.orderlist != null) {
+				sqlString += " order by ";
+				it = orderlist.iterator();
+				while (it.hasNext()) {
+					String order = (String)it.next();
+					sqlString += order + " ";
+					if (it.hasNext()) {
+						sqlString +=",";
+					}
+				}
+			}
+		}
 		if (this.grouplist != null) {
 			sqlString += " group by ";
 			it = grouplist.iterator();
 			while (it.hasNext()) {
-				String group = it.next();
+				String group = (String)it.next();
 				sqlString += group + " ";
 				if (it.hasNext()) {
 					sqlString +=",";
@@ -110,7 +122,7 @@ public class SQLNode extends PlanNode {   //子查询节点
 		
 		exeString = "select ";
 		
-		Iterator<String> it = itemlist.iterator();
+		Iterator it = itemlist.iterator();
 		while (it.hasNext()) {
 			exeString += " " + it.next();
 			if (it.hasNext()) {
@@ -118,17 +130,22 @@ public class SQLNode extends PlanNode {   //子查询节点
 			}
 		}
 		exeString += " from " ;
-		if (this.join == null) {
+		if (this.joinlist == null) {
 			it = tablelist.iterator();
 			while (it.hasNext()) {
-				exeString += it.next() +" ";
+				exeString += ((TableItem)it.next()).getString() ;
 				if (it.hasNext()) {
 					exeString +=",";
 				}
 			}
 		}else {
-			exeString += join.getString();
+			it = joinlist.iterator();
+			while (it.hasNext()) {
+				JoinItem ji = (JoinItem)it.next();
+				exeString += ji.getString();
+			}
 		}
+
 		
 		exeString += " where ";
 		exeString += this.whereconditions.getExecString();
@@ -136,7 +153,7 @@ public class SQLNode extends PlanNode {   //子查询节点
 			exeString += " order by ";
 			it = orderlist.iterator();
 			while (it.hasNext()) {
-				String order = it.next();
+				String order = (String)it.next();
 				exeString += order + " ";
 				if (it.hasNext()) {
 					exeString +=",";
@@ -148,7 +165,7 @@ public class SQLNode extends PlanNode {   //子查询节点
 			exeString += " group by ";
 			it = grouplist.iterator();
 			while (it.hasNext()) {
-				String group = it.next();
+				String group = (String)it.next();
 				exeString += group + " ";
 				if (it.hasNext()) {
 					exeString +=",";
