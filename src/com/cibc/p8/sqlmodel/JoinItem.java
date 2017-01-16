@@ -68,18 +68,20 @@ public class JoinItem implements AbstractNode {
 			}
 			
 		
-			Iterator it = joinlist.iterator();
-			while (it.hasNext()) {
-				AbstractNode n = (AbstractNode) it.next();
+		//	Iterator it = joinlist.iterator();
+		//	while (it.hasNext()) {
+			if (joinlist.size()>0) {
+				AbstractNode n = joinlist.get(0);
 				if (n instanceof SQLNode) {
 					result += "(" + n.getString() + ")";
 				}else {
 				    result  +=  n.getString();
 				}
-				if (it.hasNext()) {
-					result += ",";
-				}
 			}
+			//	if (it.hasNext()) {
+			//		result += ",";
+			//	}
+			
 		}
 		if (this.OnCondition != null) {
 		result = result + " ON "+ this.OnCondition.getString();

@@ -51,7 +51,7 @@ public class testsqlparse {
 			long t1 = d.getTime();
 //			for (int i=0 ; i<1000; i++) {
 			try {
-		    PlanNode node = parser.callSql("select sum(t1.a), t2.b from table1 t1 left join table2 t2 inner join table3  on t1.name = t2.name and t1.name= t3.name left join (select t3 from table3 t3 where t3.col3>100) on t3.id=t1.id where t1.c in (select city from citylist where provinceid=10) and t1.a>500", list);
+		    PlanNode node = parser.callSql("select sum(t1.a), t2.b from table1 t1 left join table2 t2 inner join table3  on t1.name = t2.name and t1.name= t3.name left join (select t3.col1, t3.col2, t4.col3 from table3 t3, table4 t4 where t3.col3 = t4.col3) on t3.id=t1.id where t1.c in (select city from citylist where provinceid=10) and t1.a>500", list);
 			//	PlanNode node = parser.callSql("select sum(t1.a), t2.b from table1 t1 left join table2 t2 inner join table3 t3 on t1.name = t2.name and (t1.name= t3.name and t1.col1>t2.col2) left join (select t3.m from table3 t3 where t3.col3>100) on t3.id=t1.id where t1.c in (select city from citylist where provinceid=10) and t1.a>500", list);
 			//	PlanNode node = parser.callSql("select sum(t1.a), t2.b from table1 t1 left join table2 t2 left join table3 t3  on t1.name = t2.name and t1.name = t3.name where t1.c in (select city from citylist where provinceid=10) and t1.a>500", list);
 			//	PlanNode node = parser.callSql("select a.man_id,man_name,d.sex_name,zw_name,c.money from man a left join zw b using(zw_id) left join gz c on a.man_id=c.man_id left join xb d on c.sex_id=d.sex_id",list);

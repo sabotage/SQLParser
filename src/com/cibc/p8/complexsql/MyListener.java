@@ -2014,8 +2014,9 @@ public class MyListener implements PLSQLListener {
 	@Override
 	public void exitSubquery(SubqueryContext ctx) {
 		Logger.log(Logger.DEBUG, "exitSubquery " + ctx.getText() + " XXX " + ctx.getChildCount());
-        if (model.current!=null && model.current.parent!= null) {
+        if (model.current!=null && model.current.parent!= null) { // this is subquery
         	model.current = (SQLNode) model.current.parent;
+        	
         }
 		
 	}
@@ -2154,6 +2155,7 @@ public class MyListener implements PLSQLListener {
 					current.tablelist = new ArrayList();
 				}
 				current.tablelist.add(tb);
+				System.out.println ("########################TABLE LIST ADD " + tb.getString());
 			}
 		}
 		
